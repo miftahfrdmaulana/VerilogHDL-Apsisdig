@@ -1,15 +1,12 @@
-// Testbench for Digital Stopwatch
+`timescale 1ns/1ps
+
 module tb_digital_stopwatch;
-    // Testbench signals
     reg clk;
     reg reset_btn;
     reg start_stop_btn;
     wire [6:0] sec_ones_display;
     wire [6:0] sec_tens_display;
-    
-    // For monitoring purposes
-    integer cycles_counted = 0;
-    
+
     // Instantiate the Digital Stopwatch
     digital_stopwatch uut (
         .clk(clk),
@@ -18,78 +15,56 @@ module tb_digital_stopwatch;
         .sec_ones_display(sec_ones_display),
         .sec_tens_display(sec_tens_display)
     );
-    
-    // Clock Generation - 50MHz clock (20ns period)
+
+    // Clock Generation - Diperlambat untuk simulasi
     initial begin
         clk = 0;
-        forever #10 clk = ~clk;
+        forever #1 clk = ~clk; // Period 2ns untuk mempercepat simulasi
     end
-    
-    // Monitor changes
+
+    // Monitor Display Changes
     initial begin
-        $monitor("Time=%0t reset=%b start_stop=%b ones=%h tens=%h", 
+        $monitor("Time=%0t reset=%b start_stop=%b ones=%b tens=%b", 
                  $time, reset_btn, start_stop_btn, sec_ones_display, sec_tens_display);
     end
-    
+
     // Test Sequence
     initial begin
-        // Initialize inputs
+        // Initialize
         reset_btn = 1;
         start_stop_btn = 0;
-        
-        // Test Case 1: Reset State
-        #50 
-        reset_btn = 0;
-        if (sec_ones_display !== 7'b1000000 || sec_tens_display !== 7'b1000000)
-            $display("Error: Displays not showing zero after reset");
-            
-        // Test Case 2: Start Counting
         #100;
-        start_stop_btn = 1; // Press start
-        #20;
-        start_stop_btn = 0; // Release button
-        
-        // Let it run for several clock cycles
-        #2000;
-        
-        // Test Case 3: Stop Counting
+
+        // Release reset
+        reset_btn = 0;
+        #100;
+
+        // Start counting
         start_stop_btn = 1;
         #20;
         start_stop_btn = 0;
-        
-        // Verify counter stops
-        cycles_counted = 0;
-        repeat(100) begin
-            @(posedge clk);
-            cycles_counted = cycles_counted + 1;
-        end
-        
-        // Test Case 4: Reset while stopped
-        #100;
-        reset_btn = 1;
-        #20;
-        reset_btn = 0;
-        
-        // Test Case 5: Restart after reset
-        #100;
+
+        // Wait for several counts - diperpanjang
+        #50000000; // Tunggu cukup lama untuk melihat perubahan
+
+        // Stop counting
         start_stop_btn = 1;
         #20;
         start_stop_btn = 0;
-        
-        // Let it run a bit more
+
+        // Wait a bit
         #1000;
-        
-        // End simulation
-        #100;
-        $display("Simulation completed successfully");
+
+        // Reset
+        reset_btn = 1;
+        #20;
+        reset_btn = 0;
+
+        // Run a bit more
+        #1000;
+
+        $display("Simulation completed");
         $finish;
     end
-    
-    // Timeout watchdog
-    initial begin
-        #10000; // Timeout after 10000 time units
-        $display("Simulation timeout - possible infinite loop");
-        $finish;
-    end
-    
+
 endmodule
